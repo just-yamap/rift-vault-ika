@@ -28,7 +28,7 @@ The flow:
 
 ## What's working today (live on Solana devnet)
 
-A full end-to-end flow has been executed and verified on devnet. Run `bash scripts/verify.sh` to check the 7-point proof. Sample run summary:
+A full end-to-end flow has been executed and verified on devnet. Run `bash scripts/verify.sh` to check the full proof. Sample run summary:
 
 | Component | Address | Status |
 |---|---|---|
@@ -39,6 +39,7 @@ A full end-to-end flow has been executed and verified on devnet. Run `bash scrip
 | Message Approval | Dhvzue2HZJSSR1ReTQVH9byEU81WoHm2i79VuqZpkqV1 | **status = Signed**, 312 bytes |
 | 2PC-MPC signature (Ed25519, 64-byte) | 6b8ce23c...7e00 | committed on-chain |
 | request_withdraw TX | [2HY2v1hp...q9YN](https://explorer.solana.com/tx/2HY2v1hpWRggeCnhu2ctutFekHr4krwJN6Vo9jikVU6A6BJWiGuRFZBi1yjeYV2rdEzj1VEfde9UMbVBgDiLq9YN?cluster=devnet) | finalized |
+| execute_withdraw TX | [2bn8jRWm...W4fC](https://explorer.solana.com/tx/2bn8jRWmKRjU7rSbhrSk3HE2osNya4ecrTdGAHWAdZYbdbTxagyWkVnRcfpyWmTRyvC3S365TZxZWAUf7dE6W4fC?cluster=devnet) | finalized — 100 USDC transferred |
 
 The signature was produced via live gRPC calls to `pre-alpha-dev-1.ika.ika-network.net:443` (Presign + Sign with `ApprovalProof::Solana`) and committed into the `MessageApproval` PDA by the Ika Network Outbound Agent.
 
@@ -54,8 +55,10 @@ The signature was produced via live gRPC calls to `pre-alpha-dev-1.ika.ika-netwo
 ├── client/                    TypeScript scripts (Bun)
 │   ├── src/initialize-vault.ts
 │   ├── src/deposit-usdc.ts
-│   └── src/request-withdraw.ts
-├── scripts/verify.sh          End-to-end devnet verification (7 checks)
+│   ├── src/request-withdraw.ts
+│   └── src/execute-withdraw.ts
+├── scripts/verify.sh          End-to-end devnet verification (8 checks)
+├── scripts/verify-execute.sh  Execute-withdraw on-chain proof
 └── Anchor.toml                cluster = devnet, program_id deployed
 ```
 
@@ -90,6 +93,10 @@ bun run src/request-withdraw.ts 100 <DEST_WALLET> <DWALLET_PUBKEY_HEX>
 
 # 7. Produce the 2PC-MPC signature via Ika gRPC and commit it on-chain
 ./rift-ika-sign <REQUEST_WITHDRAW_TX_SIG> 100 <DEST_ATA> <NONCE>
+
+
+# 7b. Execute the withdrawal — transfers USDC from vault → destination ATA
+cd client && bun run src/execute-withdraw.ts <NONCE>
 
 # 8. Verify everything on-chain
 bash scripts/verify.sh
