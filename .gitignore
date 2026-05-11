@@ -1,0 +1,26 @@
+# Rust / Anchor
+target/
+.anchor/
+**/*.rs.bk
+**/*.bak
+**/*.bak-*
+
+# Node
+node_modules/
+.next/
+.yarn/
+
+# Solana
+test-ledger/
+
+# Local state (contains Ika attestation — regenerate via DKG)
+.rift-dwallet.json
+
+# Logs
+/tmp/rift-*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
