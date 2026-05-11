@@ -1,8 +1,8 @@
-# Rift Vault — USDC Custody with Ika 2PC-MPC Threshold Signatures
+# Rift Vault - USDC Custody with Ika 2PC-MPC Threshold Signatures
 
-A Solana program that holds USDC and gates every withdrawal behind a fresh **Ika dWallet 2PC-MPC threshold signature**. No single key can drain the vault — withdrawals require a signature co-produced between the on-chain program's CPI authority PDA and the Ika network.
+A Solana program that holds USDC and gates every withdrawal behind a fresh **Ika dWallet 2PC-MPC threshold signature**. No single key can drain the vault - withdrawals require a signature co-produced between the on-chain program's CPI authority PDA and the Ika network.
 
-> **Submission**: Encrypt & Ika side track — Colosseum Frontier Hackathon 2026
+> **Submission**: Encrypt & Ika side track - Colosseum Frontier Hackathon 2026
 > **Track scope**: bridgeless capital markets / Ika dWallet custody
 > **Status**: live and verified end-to-end on Solana devnet
 
@@ -10,9 +10,9 @@ A Solana program that holds USDC and gates every withdrawal behind a fresh **Ika
 
 ## The problem
 
-Treasury custody on Solana relies on a single private key. If that key leaks — operator phone compromised, server breach, accidental keypair commit — the entire treasury is gone in a single transaction. Multisig helps but adds UX friction and still concentrates trust in a handful of co-signers.
+Treasury custody on Solana relies on a single private key. If that key leaks - operator phone compromised, server breach, accidental keypair commit - the entire treasury is gone in a single transaction. Multisig helps but adds UX friction and still concentrates trust in a handful of co-signers.
 
-For real-world products that hold user funds at scale — exchanges, custodians, lending markets, fiat-on-ramp operators — this is a hard constraint. We need a custody primitive where **no single party can move funds unilaterally**, while keeping latency low enough for production use.
+For real-world products that hold user funds at scale - exchanges, custodians, lending markets, fiat-on-ramp operators - this is a hard constraint. We need a custody primitive where **no single party can move funds unilaterally**, while keeping latency low enough for production use.
 
 ## The approach
 
@@ -20,11 +20,11 @@ For real-world products that hold user funds at scale — exchanges, custodians,
 
 The flow:
 
-1. **DKG (one-time)** — Operator initiates a DKG with the Ika network via gRPC. The Ika network commits the resulting dWallet on-chain. Operator transfers authority of that dWallet to the Rift Vault program's `cpi_authority` PDA. From this point on, only the Rift Vault program can request signatures from this dWallet.
-2. **Deposit** — Users deposit USDC into the vault PDA. The vault is a standard Anchor account holding the SPL token balance.
-3. **Request withdrawal** — A user calls `request_withdraw(amount, dest, ...)`. The program builds a deterministic message digest (`keccak256("rift-withdraw-v1|<atomics>|<dest_ata>|<nonce>")`), creates a `WithdrawRequest` PDA, and CPIs into Ika's `approve_message` instruction. Ika creates a `MessageApproval` PDA with status=Pending.
-4. **Threshold signing** — A signer service calls Ika's Presign + Sign gRPC endpoints with `ApprovalProof::Solana { tx_sig, slot }` pointing at the `approve_message` transaction. The Ika network produces a 64-byte Ed25519 signature using 2PC-MPC and commits it into the `MessageApproval` PDA, flipping status to Signed.
-5. **Execute withdrawal** — A relayer calls `execute_withdraw`, which verifies the signature is present on-chain, transfers USDC from vault to destination ATA, and marks the request settled.
+1. **DKG (one-time)** - Operator initiates a DKG with the Ika network via gRPC. The Ika network commits the resulting dWallet on-chain. Operator transfers authority of that dWallet to the Rift Vault program's `cpi_authority` PDA. From this point on, only the Rift Vault program can request signatures from this dWallet.
+2. **Deposit** - Users deposit USDC into the vault PDA. The vault is a standard Anchor account holding the SPL token balance.
+3. **Request withdrawal** - A user calls `request_withdraw(amount, dest, ...)`. The program builds a deterministic message digest (`keccak256("rift-withdraw-v1|<atomics>|<dest_ata>|<nonce>")`), creates a `WithdrawRequest` PDA, and CPIs into Ika's `approve_message` instruction. Ika creates a `MessageApproval` PDA with status=Pending.
+4. **Threshold signing** - A signer service calls Ika's Presign + Sign gRPC endpoints with `ApprovalProof::Solana { tx_sig, slot }` pointing at the `approve_message` transaction. The Ika network produces a 64-byte Ed25519 signature using 2PC-MPC and commits it into the `MessageApproval` PDA, flipping status to Signed.
+5. **Execute withdrawal** - A relayer calls `execute_withdraw`, which verifies the signature is present on-chain, transfers USDC from vault to destination ATA, and marks the request settled.
 
 ## What's working today (live on Solana devnet)
 
@@ -39,7 +39,7 @@ A full end-to-end flow has been executed and verified on devnet. Run `bash scrip
 | Message Approval | Dhvzue2HZJSSR1ReTQVH9byEU81WoHm2i79VuqZpkqV1 | **status = Signed**, 312 bytes |
 | 2PC-MPC signature (Ed25519, 64-byte) | 6b8ce23c...7e00 | committed on-chain |
 | request_withdraw TX | [2HY2v1hp...q9YN](https://explorer.solana.com/tx/2HY2v1hpWRggeCnhu2ctutFekHr4krwJN6Vo9jikVU6A6BJWiGuRFZBi1yjeYV2rdEzj1VEfde9UMbVBgDiLq9YN?cluster=devnet) | finalized |
-| execute_withdraw TX | [2bn8jRWm...W4fC](https://explorer.solana.com/tx/2bn8jRWmKRjU7rSbhrSk3HE2osNya4ecrTdGAHWAdZYbdbTxagyWkVnRcfpyWmTRyvC3S365TZxZWAUf7dE6W4fC?cluster=devnet) | finalized — 100 USDC transferred |
+| execute_withdraw TX | [2bn8jRWm...W4fC](https://explorer.solana.com/tx/2bn8jRWmKRjU7rSbhrSk3HE2osNya4ecrTdGAHWAdZYbdbTxagyWkVnRcfpyWmTRyvC3S365TZxZWAUf7dE6W4fC?cluster=devnet) | finalized - 100 USDC transferred |
 
 The signature was produced via live gRPC calls to `pre-alpha-dev-1.ika.ika-network.net:443` (Presign + Sign with `ApprovalProof::Solana`) and committed into the `MessageApproval` PDA by the Ika Network Outbound Agent.
 
@@ -88,14 +88,14 @@ bun run src/initialize-vault.ts <DWALLET_PDA>
 # 5. Deposit some USDC (devnet test mint)
 bun run src/deposit-usdc.ts 1000
 
-# 6. Request a withdrawal — this CPIs into Ika approve_message
+# 6. Request a withdrawal - this CPIs into Ika approve_message
 bun run src/request-withdraw.ts 100 <DEST_WALLET> <DWALLET_PUBKEY_HEX>
 
 # 7. Produce the 2PC-MPC signature via Ika gRPC and commit it on-chain
 ./rift-ika-sign <REQUEST_WITHDRAW_TX_SIG> 100 <DEST_ATA> <NONCE>
 
 
-# 7b. Execute the withdrawal — transfers USDC from vault → destination ATA
+# 7b. Execute the withdrawal - transfers USDC from vault → destination ATA
 cd client && bun run src/execute-withdraw.ts <NONCE>
 
 # 8. Verify everything on-chain
@@ -108,8 +108,8 @@ The Ika dWallet is not used as a generic signer for an arbitrary message. The pr
 
 1. Derives the `MessageApproval` PDA with the same seed scheme Ika expects (`b"dwallet"` || (curve_u16 || pubkey) chunked into 32B || `b"message_approval"` || sig_scheme_u16 || message_digest).
 2. Builds the `approve_message` instruction data byte-for-byte matching Ika's discriminator + Borsh layout (see `dwallet.rs::approve_message_data`).
-3. CPIs with the program's own `cpi_authority` PDA as signer — the same PDA that owns the dWallet. This proves on-chain that the request originated from program logic, not an external caller.
-4. The off-chain signer service uses `ApprovalProof::Solana` so the Ika network independently verifies the `approve_message` TX exists at the given slot before producing a signature. Ika is not a blind oracle — it cryptographically commits to the user's intent.
+3. CPIs with the program's own `cpi_authority` PDA as signer - the same PDA that owns the dWallet. This proves on-chain that the request originated from program logic, not an external caller.
+4. The off-chain signer service uses `ApprovalProof::Solana` so the Ika network independently verifies the `approve_message` TX exists at the given slot before producing a signature. Ika is not a blind oracle - it cryptographically commits to the user's intent.
 
 If you swap the dWallet for a vanilla keypair, you can drain the vault. If you swap it for the real one but disable the CPI, the Ika network refuses to sign. Each piece is load-bearing.
 
@@ -118,15 +118,15 @@ If you swap the dWallet for a vanilla keypair, you can drain the vault. If you s
 
 The hackathon submission ships the custody primitive. Path to mainnet:
 
-- **Frontend** — operator dashboard and end-user withdrawal UI
-- **Mainnet dWallet** — re-DKG against Ika mainnet once the network ships
-- **Multi-asset support** — generalize from USDC to any SPL / Token-2022 mint
-- **Spending limits** — per-window and per-destination caps enforced on-chain
-- **Recovery flow** — operator-side authority rotation via on-chain governance + a second Ika authorization
+- **Frontend** - operator dashboard and end-user withdrawal UI
+- **Mainnet dWallet** - re-DKG against Ika mainnet once the network ships
+- **Multi-asset support** - generalize from USDC to any SPL / Token-2022 mint
+- **Spending limits** - per-window and per-destination caps enforced on-chain
+- **Recovery flow** - operator-side authority rotation via on-chain governance + a second Ika authorization
 
 ## Credits
 
-- **Ika dWallet network** — 2PC-MPC threshold signing infrastructure (`dwallet-labs/ika-pre-alpha`)
-- **Anchor / Solana Labs** — program framework
+- **Ika dWallet network** - 2PC-MPC threshold signing infrastructure (`dwallet-labs/ika-pre-alpha`)
+- **Anchor / Solana Labs** - program framework
 - Built solo by [@just-yamap](https://github.com/just-yamap) for Colosseum Frontier 2026.
 
