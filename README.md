@@ -128,5 +128,5 @@ The hackathon submission ships the custody primitive. Path to mainnet:
 
 - **Ika dWallet network** - 2PC-MPC threshold signing infrastructure (`dwallet-labs/ika-pre-alpha`)
 - **Anchor / Solana Labs** - program framework
-- Built solo by [@just-yamap](https://github.com/just-yamap) for Colosseum Frontier 2026.
+
 
